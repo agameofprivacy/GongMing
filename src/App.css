@@ -23,6 +23,11 @@ h1 .emoji{
   top: 1vw;
 }
 
+h2{
+  font-family: -apple-system-headline;
+  text-align: left;
+}
+
 .App-header p{
   text-align: center;
   font-size: 14pt;
@@ -52,6 +57,7 @@ h1 .emoji{
 
 #promptButtons{
   margin-top:2vh;
+  margin-bottom:2vh;
 }
 
 /*.App-header button:hover{
@@ -84,6 +90,53 @@ h1 .emoji{
   border-radius: 0;
 }*/
 
+div.legislatorCard{
+  height:100%;
+  width:100%;
+  margin-top:10pt;
+  border-radius: 10pt;
+  padding-top: 20pt;
+  padding-bottom: 30pt;
+  margin-bottom: 30pt;
+  background-color: white;
+  box-shadow: 0px 5px 15px rgba(0,0,0,0.12);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-sizing:border-box;
+}
+
+.col-lg-4, .col-md-4{
+  padding-left:10px;
+  padding-right:10px;
+}
+
+div.legislatorCard .imageContainer{
+  height:14vw;
+  width:14vw;
+  border-radius: 7vw;
+  overflow: hidden;
+  float:right;
+}
+
+div.legislatorCard .labelContainer{
+  float:left;
+}
+
+div.legislatorCard .labelContainer li{
+  font-size: 14pt;
+  margin-bottom:7.5pt;
+}
+
+
+div.legislatorCard img{
+  width:100%;
+}
+
+div.legislatorCard h2{
+  margin-bottom: 15pt;
+  text-align:left;
+  margin-left:10pt;
+}
+
 footer{
   padding-bottom:10pt;
   text-align: center;
@@ -91,6 +144,7 @@ footer{
   margin-top: 6vh;
   margin-left: auto;
   margin-right: auto;
+  clear:both;
 }
 
 .noselect {
@@ -103,7 +157,7 @@ footer{
                                   not supported by any browser */
 }
 
-@media (max-width: 413pt) {
+@media (min-width: 1200px) {
   #promptButtons{
     margin-top:15pt;
   }
@@ -124,4 +178,107 @@ footer{
   .App-header button{
     font-size: 18pt;
   }
+
+  div.legislatorCard .imageContainer{
+    height:6vw;
+    width:6vw;
+    border-radius: 3vw;
+    overflow: hidden;
+    float:right;
+  }
+
+  div.legislatorCard .labelContainer{
+
+  }
+
+  div.legislatorCard .labelContainer h2{
+    text-align: center;
+    margin-left: 0;
+  }
+
+}
+
+
+@media (max-width: 767px) {
+  #promptButtons{
+    margin-top:15pt;
+  }
+
+  h1{
+    text-align: center;
+    font-family: -apple-system-headline;
+    font-size: 16pt;
+    font-size: 16vw;
+    margin-top:10vh;
+  }
+
+  h1 .emoji{
+    position:relative;
+    top: 0vw;
+  }
+
+  .App-header button{
+    font-size: 18pt;
+  }
+
+  div.legislatorCard .imageContainer{
+    height:20vw;
+    width:20vw;
+    border-radius: 10vw;
+    overflow: hidden;
+    float:right;
+  }
+
+  div.legislatorCard .labelContainer{
+
+  }
+
+  div.legislatorCard .labelContainer h2{
+    text-align: center;
+    margin-left: 0;
+  }
+
+}
+
+  @media (max-width: 480px) {
+    #promptButtons{
+      margin-top:15pt;
+    }
+
+    h1{
+      text-align: center;
+      font-family: -apple-system-headline;
+      font-size: 16pt;
+      font-size: 16vw;
+      margin-top:10vh;
+    }
+
+    h1 .emoji{
+      position:relative;
+      top: 0vw;
+    }
+
+    .App-header button{
+      font-size: 18pt;
+    }
+
+    div.legislatorCard .imageContainer{
+      height:40vw;
+      width:40vw;
+      border-radius: 20vw;
+      overflow: hidden;
+      float:none;
+      margin-left:auto;
+      margin-right: auto;
+    }
+
+    div.legislatorCard .labelContainer{
+      width:100%;
+    }
+
+    div.legislatorCard .labelContainer h2{
+      text-align: center;
+      margin-left: 0;
+    }
+
 }
