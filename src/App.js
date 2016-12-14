@@ -9604,6 +9604,9 @@ class App extends Component {
     super(props);
     this.queryLocation = this.queryLocation.bind(this);
     this.locateWithGPS = this.locateWithGPS.bind(this);
+    this.showDistrictControl = this.showDistrictControl.bind(this);
+    this.loadLocality = this.loadLocality.bind(this);
+    this.loadSublocality = this.loadSublocality.bind(this);
     this.state = {districtAlpha:'', districtNum:'', welcomed:false};
     this.rootURL = "https://speakout-9d07b.appspot.com/";
   }
@@ -9615,7 +9618,24 @@ class App extends Component {
     var legislatorsList;
     var otherLegislatorsCards;
     if (!this.state.welcomed){
-      promptButtons = <div id="promptButtons"><button onClick={this.locateWithGPS}>搜尋立委</button></div>;
+      if (typeof this.state.rootConstituencies !== "undefined"){
+        var rootConstituencyOptions = this.state.rootConstituencies.map((rootConstituency) =>
+          <option>{rootConstituency}</option>
+        );
+      }
+      if (typeof this.state.localities !== "undefined"){
+        var localityOptions = this.state.localities.map((locality) =>
+          <option>{locality}</option>
+        );
+      }
+      if (typeof this.state.sublocalities !== "undefined"){
+        var sublocalityOptions = this.state.sublocalities.map((sublocality) =>
+          <option>{sublocality}</option>
+        );
+      }
+
+      promptButtons = <div id="promptButtons"><button onClick={this.locateWithGPS}>以GPS搜尋</button><button onClick={this.showDistrictControl}>依選區搜尋</button></div>;
+      districtInput = <div id="districtInput"><select onChange={this.loadLocality}>{rootConstituencyOptions}</select><select onChange={this.loadSublocality}>{localityOptions}</select><select>{sublocalityOptions}</select></div>
       instructionsText = <p>打給立委要求支持婚姻平權<br/>稿子會幫你準備好</p>;
     }
     if (typeof this.state.localLegislator !== 'undefined'){
@@ -9656,7 +9676,7 @@ class App extends Component {
           {legislatorsList}
           {otherLegislatorsCards}
         </div>
-        <footer className="col-lg-12 noselect">Made with ❤️ for Taiwan</footer>
+        <footer className="col-lg-12 noselect">Made with ❤️ &nbsp;for Taiwan</footer>
       </div>
     );
   }
@@ -9674,6 +9694,52 @@ class App extends Component {
     }
   }
 
+  showDistrictControl(){
+    var rootConstituencies = [];
+    for (var constituency in constituencies){
+      for (var district in constituencies[constituency]){
+        var rawConstituency = constituencies[constituency][district];
+        var constituencyArray = rawConstituency.split(",");
+        if (rootConstituencies.indexOf(constituencyArray[0]) === -1){
+          rootConstituencies.push(constituencyArray[0]);
+        }
+      }
+    }
+    this.setState({rootConstituencies:rootConstituencies});
+  }
+
+  loadLocality(event){
+    var selectedRootConstituency = event.target.value;
+    console.log("selectedRootConstituency is " + event.target.value);
+    var localities = [];
+    for (var constituency in constituencies){
+      for (var district in constituencies[constituency]){
+        var rawConstituency = constituencies[constituency][district];
+        var constituencyArray = rawConstituency.split(",");
+        if (constituencyArray[0] === selectedRootConstituency && localities.indexOf(constituencyArray[1]) === -1){
+          localities.push(constituencyArray[1]);
+        }
+      }
+    }
+    this.setState({localities:localities});
+  }
+
+  loadSublocality(event){
+    var selectedLocality = event.target.value;
+    console.log("selectedLocality is " + event.target.value);
+    var sublocalities = [];
+    for (var constituency in constituencies){
+      for (var district in constituencies[constituency]){
+        var rawConstituency = constituencies[constituency][district];
+        var constituencyArray = rawConstituency.split(",");
+        if (constituencyArray[1] === selectedLocality && sublocalities.indexOf(constituencyArray[2]) === -1){
+          sublocalities.push(constituencyArray[2]);
+        }
+      }
+    }
+    this.setState({sublocalities:sublocalities});
+  }
+
   queryLocation(position){
     var lat = position.coords.latitude;
     var lon = position.coords.longitude;
@@ -9683,13 +9749,14 @@ class App extends Component {
       if (!error && response.statusCode === 200) {
         var address = JSON.parse(body)["address"];
         // console.log(address.state + ", " + address.suburb + ", " + address.city_district); // Show the HTML for the Google homepage.
+        console.log("address:" + body);
         var districtActive;
         for (var constituency in constituencies){
           for (var district in constituencies[constituency]){
-            if (constituencies[constituency][district] === address.state){
+            if (constituencies[constituency][district] === address.state || constituencies[constituency][district] === address.county){
               districtActive = constituency;
             }
-            else if (constituencies[constituency][district] === address.state + "," + address.suburb){
+            else if (constituencies[constituency][district] === address.state + "," + address.suburb || constituencies[constituency][district] === address.county + "," + address.town){
               districtActive = constituency;
             }
             else if (constituencies[constituency][district] === address.state + "," + address.suburb + "," + address.city_district){
@@ -9697,6 +9764,7 @@ class App extends Component {
             }
           }
         }
+        console.log("districtActive: " + districtActive);
         var districtActiveArray = districtActive.split(',');
         var localLegislator;
         var otherLegislators = [];
@@ -9704,7 +9772,7 @@ class App extends Component {
           if (legislators[legislator].constituency[0] === districtActiveArray[0] && legislators[legislator].constituency[1] === parseInt(districtActiveArray[1])){
             localLegislator = legislators[legislator];
           }
-          if (legislators[legislator].constituency[0] === 'proportional' || legislators[legislator].constituency[0] === 'aboriginal'){
+          if ((legislators[legislator].constituency[0] === 'proportional' || legislators[legislator].constituency[0] === 'aboriginal') && typeof legislators[legislator].contacts !== 'undefined'){
             otherLegislators.push(legislators[legislator]);
           }
         }

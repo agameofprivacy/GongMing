@@ -60,6 +60,12 @@ h2{
   margin-bottom:2vh;
 }
 
+#districtInput{
+  margin-left:auto;
+  margin-right:auto;
+  text-align:center;
+}
+
 /*.App-header button:hover{
   background-color: #CC3838;
   transition: background-color 0.3s;
@@ -166,7 +172,7 @@ footer{
     text-align: center;
     font-family: -apple-system-headline;
     font-size: 16pt;
-    font-size: 16vw;
+    font-size: 8vw;
     margin-top:10vh;
   }
 
