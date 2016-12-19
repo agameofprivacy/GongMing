@@ -1155,8 +1155,8 @@ var constituencies = {
   "TTT,0": ["臺東縣"],
   "HUA,0": ["花蓮縣"],
   "PEN,0": ["澎湖縣"],
-  "JME,0": ["金門縣"],
-  "LJF,0": ["連江縣"]
+  "KIN,0": ["金門縣"],
+  "LIE,0": ["連江縣"]
 };
 var legislators = [
     {
@@ -9604,11 +9604,14 @@ class App extends Component {
     super(props);
     this.queryLocation = this.queryLocation.bind(this);
     this.locateWithGPS = this.locateWithGPS.bind(this);
-    this.showDistrictControl = this.showDistrictControl.bind(this);
     this.loadLocality = this.loadLocality.bind(this);
     this.loadSublocality = this.loadSublocality.bind(this);
-    this.state = {districtAlpha:'', districtNum:'', welcomed:false};
-    this.rootURL = "https://speakout-9d07b.appspot.com/";
+    this.setSublocality = this.setSublocality.bind(this);
+    this.checkSelectedDistrict = this.checkSelectedDistrict.bind(this);
+    this.getLegislatorsWithLatLon = this.getLegislatorsWithLatLon.bind(this);
+    this.state = {districtAlpha:'', districtNum:'', welcomed:false, localities:[], sublocalities:[], rootConstituencies:[], selectedRootConstituency:"待選", selectedLocality:"待選", selectedSublocality:"待選"};
+    this.rootURL = "https://gongming.herokuapp.com/";
+    // this.rootURL = "http://localhost:8080/"
   }
 
   render() {
@@ -9616,7 +9619,10 @@ class App extends Component {
     var promptButtons;
     var districtInput;
     var legislatorsList;
-    var otherLegislatorsCards;
+    var proportionalLegislatorsCards;
+    var aboriginalLegislatorsCards;
+    var localityHiddenStyle;
+    var sublocalityHiddenStyle;
     if (!this.state.welcomed){
       if (typeof this.state.rootConstituencies !== "undefined"){
         var rootConstituencyOptions = this.state.rootConstituencies.map((rootConstituency) =>
@@ -9634,33 +9640,70 @@ class App extends Component {
         );
       }
 
-      promptButtons = <div id="promptButtons"><button onClick={this.locateWithGPS}>以GPS搜尋</button><button onClick={this.showDistrictControl}>依選區搜尋</button></div>;
-      districtInput = <div id="districtInput"><select onChange={this.loadLocality}>{rootConstituencyOptions}</select><select onChange={this.loadSublocality}>{localityOptions}</select><select>{sublocalityOptions}</select></div>
-      instructionsText = <p>打給立委要求支持婚姻平權<br/>稿子會幫你準備好</p>;
+      if (typeof this.state.localities === "undefined" || this.state.localities.length === 0){
+        localityHiddenStyle = {display:'none'};
+      }
+      else{
+        localityHiddenStyle = {display:'inline'};
+      }
+
+      if (typeof this.state.sublocalities === "undefined" || this.state.sublocalities.length === 0){
+        sublocalityHiddenStyle = {display:'none'};
+      }
+      else{
+        sublocalityHiddenStyle = {display:'inline'};
+      }
+
+
+      promptButtons = <div id="promptButtons"><button onClick={this.locateWithGPS}>以所在地搜尋</button></div>;
+      districtInput = <div id="districtInput"><p>或依行政區搜尋</p>
+        <div>
+          <select value={this.state.selectedRootConstituency} onChange={this.loadLocality}>
+            <option value="待選" disabled="disabled">待選</option>
+            {rootConstituencyOptions}
+          </select>
+          <select value={this.state.selectedLocality} style={localityHiddenStyle} onChange={this.loadSublocality}>
+            <option value="待選" disabled="disabled">待選</option>
+            {localityOptions}
+          </select>
+          <select style={sublocalityHiddenStyle} value={this.state.selectedSublocality} onChange={this.setSublocality}>
+            <option value="待選" disabled="disabled">待選</option>
+            {sublocalityOptions}
+          </select></div>
+        </div>
+      instructionsText = <p>稿子幫你準備好<br/>打給立委修民法</p>;
     }
     if (typeof this.state.localLegislator !== 'undefined'){
       var contactsListItems = this.state.localLegislator.contacts.map((contact) =>
         <li><a href={"tel://" + contact.phone}>{contact.name}</a></li>
      );
-      legislatorsList = <div className="col-xs-12 col-sm-6 col-md-6 col-lg-4"><div id="localLegislator" className="legislatorCard col-xs-12"><div className="imageContainer"><img src={this.state.localLegislator.image} alt="" /></div><div className="labelContainer"><h2>{this.state.localLegislator.name}</h2><ul>{contactsListItems}</ul></div></div></div>
+      legislatorsList = <div className="legislatorCardContainer"><div className="legislatorCard"><div className="imageContainer"><img src={this.state.localLegislator.image} alt="" /></div><div className="labelContainer"><h2>{this.state.localLegislator.name}</h2><ul>{contactsListItems}</ul></div></div></div>
     }
 
-    if (typeof this.state.otherLegislators !== 'undefined'){
+    if (typeof this.state.proportionalLegislators !== 'undefined'){
 
-      otherLegislatorsCards = this.state.otherLegislators.map(function(otherLegislator){
+      proportionalLegislatorsCards = this.state.proportionalLegislators.map(function(otherLegislator){
         var contactsListItems;
-        if (typeof otherLegislator.contacts !== 'undefined'){
-           contactsListItems = otherLegislator.contacts.map((contact) =>
-            <li><a href={"tel://" + contact.phone}>{contact.name}</a></li>
-          );
-        }
-        else{
-          contactsListItems = <li>已離職</li>
-        }
-      return  <div className="col-xs-12 col-sm-6 col-md-6 col-lg-4"><div id="localLegislator" className="legislatorCard col-xs-12"><div className="imageContainer"><img src={otherLegislator.image} alt="" /></div><div className="labelContainer"><h2>{otherLegislator.name}</h2><ul>{contactsListItems}</ul></div></div></div>
+        contactsListItems = otherLegislator.contacts.map((contact) =>
+          <li><a href={"tel://" + contact.phone}>{contact.name}</a></li>
+        );
+        return <div className="legislatorCardContainer"><div className="legislatorCard"><div className="imageContainer"><img src={otherLegislator.image} alt="" /></div><div className="labelContainer"><h3>{otherLegislator.name}</h3><ul>{contactsListItems}</ul></div></div></div>
       }
      );
     }
+
+    if (typeof this.state.aboriginalLegislators !== 'undefined'){
+
+      aboriginalLegislatorsCards = this.state.aboriginalLegislators.map(function(aboriginalLegislator){
+        var contactsListItems;
+        contactsListItems = aboriginalLegislator.contacts.map((contact) =>
+          <li><a href={"tel://" + contact.phone}>{contact.name}</a></li>
+        );
+        return <div className="legislatorCardContainer"><div className="legislatorCard"><div className="imageContainer"><img src={aboriginalLegislator.image} alt="" /></div><div className="labelContainer"><h2>{aboriginalLegislator.name}</h2><ul>{contactsListItems}</ul></div></div></div>
+      }
+     );
+    }
+
 
     return (
       <div className="App container">
@@ -9673,8 +9716,18 @@ class App extends Component {
           {instructionsText}
           {promptButtons}
           {districtInput}
+          <h2>地方</h2>
+          <div id="localLegislator" className="legislatorList">
           {legislatorsList}
-          {otherLegislatorsCards}
+          </div>
+          <h2>全國不分區</h2>
+          <div className="legislatorList">
+          {proportionalLegislatorsCards}
+          </div>
+          <h2>原住民</h2>
+          <div className="legislatorList">
+          {aboriginalLegislatorsCards}
+          </div>
         </div>
         <footer className="col-lg-12 noselect">Made with ❤️ &nbsp;for Taiwan</footer>
       </div>
@@ -9682,19 +9735,6 @@ class App extends Component {
   }
 
   componentDidMount(){
-
-  }
-
-  locateWithGPS(){
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(this.queryLocation);
-    }
-    else {
-        alert("Geolocation is not supported by this browser.");
-    }
-  }
-
-  showDistrictControl(){
     var rootConstituencies = [];
     for (var constituency in constituencies){
       for (var district in constituencies[constituency]){
@@ -9708,48 +9748,85 @@ class App extends Component {
     this.setState({rootConstituencies:rootConstituencies});
   }
 
+  locateWithGPS(){
+    if (navigator.geolocation) {
+      // navigator.geolocation.getCurrentPosition(this.queryLocation);
+      navigator.geolocation.getCurrentPosition(this.getLegislatorsWithLatLon);
+    }
+    else {
+        alert("Geolocation is not supported by this browser.");
+    }
+  }
+
+
   loadLocality(event){
-    var selectedRootConstituency = event.target.value;
-    console.log("selectedRootConstituency is " + event.target.value);
     var localities = [];
     for (var constituency in constituencies){
       for (var district in constituencies[constituency]){
         var rawConstituency = constituencies[constituency][district];
         var constituencyArray = rawConstituency.split(",");
-        if (constituencyArray[0] === selectedRootConstituency && localities.indexOf(constituencyArray[1]) === -1){
+        if (constituencyArray[0] === event.target.value && localities.indexOf(constituencyArray[1]) === -1){
           localities.push(constituencyArray[1]);
         }
       }
     }
-    this.setState({localities:localities});
+    this.setState({localities:localities, selectedRootConstituency:event.target.value, selectedLocality:"待選", selectedSublocality:"待選"}, this.checkSelectedDistrict);
   }
 
   loadSublocality(event){
-    var selectedLocality = event.target.value;
-    console.log("selectedLocality is " + event.target.value);
     var sublocalities = [];
     for (var constituency in constituencies){
       for (var district in constituencies[constituency]){
         var rawConstituency = constituencies[constituency][district];
         var constituencyArray = rawConstituency.split(",");
-        if (constituencyArray[1] === selectedLocality && sublocalities.indexOf(constituencyArray[2]) === -1){
-          sublocalities.push(constituencyArray[2]);
+        if (constituencyArray[1] === event.target.value && constituencyArray.length > 2){
+          if (sublocalities.indexOf(constituencyArray[2]) === -1){
+            sublocalities.push(constituencyArray[2]);
+          }
         }
       }
     }
-    this.setState({sublocalities:sublocalities});
+    this.setState({sublocalities:sublocalities, selectedLocality:event.target.value, selectedSublocality:"待選"}, this.checkSelectedDistrict);
+  }
+
+  setSublocality(event){
+    this.setState({selectedSublocality:event.target.value}, this.checkSelectedDistrict);
+  }
+
+  getLegislatorsWithLatLon(position){
+    var lat = position.coords.latitude;
+    var lon = position.coords.longitude;
+    var requestURL = this.rootURL + "getLegislatorsWithLatLon";
+    var thisObject = this;
+    console.log(requestURL);
+    request({url:requestURL, qs:{webAPIKey:encodeURIComponent("UrXi59rCjB7wBMU6hF1l6oTdyfKCzw5C06l7IASEPtKCAMHV8ZQxjeX3BXOwEpa"), lat:lat, lon:lon}},function (error, response, body) {
+      if (!error && response.statusCode === 200) {
+        var parsedJSON = JSON.parse(body);
+        if (parsedJSON.message !== "getLegislatorsWithLatLon unsuccessful"){
+          var proportionalLegislatorsArray = parsedJSON.proportionalLegislators;
+          var aboriginalLegislatorsArray = parsedJSON.aboriginalLegislators;
+
+          thisObject.setState({localLegislator:parsedJSON.localLegislator, proportionalLegislators:proportionalLegislatorsArray, aboriginalLegislators:aboriginalLegislatorsArray});
+          console.log(parsedJSON["message"]);
+        }
+        else{
+          alert("找不到與您所在地的行政區，請於下面行政區選單手選，謝謝！");
+        }
+      }
+      else{
+        console.log(JSON.parse(body)["message"]);
+      }
+    });
   }
 
   queryLocation(position){
     var lat = position.coords.latitude;
     var lon = position.coords.longitude;
-    var requestURL = "http://nominatim.openstreetmap.org/reverse?format=json&accept-language=zh-tw&lat=" + lat + "&lon=" + lon;
+    var requestURL = "https://nominatim.openstreetmap.org/reverse?format=json&accept-language=zh-tw&lat=" + lat + "&lon=" + lon;
     var thisObject = this;
     request(requestURL, function (error, response, body) {
       if (!error && response.statusCode === 200) {
         var address = JSON.parse(body)["address"];
-        // console.log(address.state + ", " + address.suburb + ", " + address.city_district); // Show the HTML for the Google homepage.
-        console.log("address:" + body);
         var districtActive;
         for (var constituency in constituencies){
           for (var district in constituencies[constituency]){
@@ -9764,22 +9841,22 @@ class App extends Component {
             }
           }
         }
-        console.log("districtActive: " + districtActive);
+        if (typeof districtActive === 'undefined'){
+          alert("找不到與您所在地的行政區，請於下面行政區選單手選，謝謝！");
+        }
         var districtActiveArray = districtActive.split(',');
         var localLegislator;
-        var otherLegislators = [];
+        var proportionalLegislators = [];
         for (var legislator in legislators){
           if (legislators[legislator].constituency[0] === districtActiveArray[0] && legislators[legislator].constituency[1] === parseInt(districtActiveArray[1])){
             localLegislator = legislators[legislator];
           }
-          if ((legislators[legislator].constituency[0] === 'proportional' || legislators[legislator].constituency[0] === 'aboriginal') && typeof legislators[legislator].contacts !== 'undefined'){
-            otherLegislators.push(legislators[legislator]);
+          if ((legislators[legislator].constituency[0] === 'proportional' || legislators[legislator].constituency[0] === 'aborigine') && typeof legislators[legislator].contacts !== 'undefined'){
+            proportionalLegislators.push(legislators[legislator]);
           }
         }
-        console.log(localLegislator);
-        console.log(otherLegislators);
         thisObject.setState({localLegislator:localLegislator});
-        thisObject.setState({otherLegislators:otherLegislators});
+        thisObject.setState({proportionalLegislators:proportionalLegislators});
       }
   });
 
@@ -9788,6 +9865,50 @@ class App extends Component {
   goHome(){
     location.reload();
   }
+
+  checkSelectedDistrict(){
+    var districtString;
+    if (this.state.selectedRootConstituency !== "待選"){
+      // search for exact match for rootConstituency
+      districtString = this.state.selectedRootConstituency;
+    }
+    if (this.state.selectedLocality !== "待選"){
+      // search for exact match for rootConstituency + locality
+      districtString = this.state.selectedRootConstituency + "," + this.state.selectedLocality;
+    }
+    if (this.state.selectedSublocality !== "待選"){
+      // search for exact match for rootConstituency + locality + sublocality
+      districtString = this.state.selectedRootConstituency + "," + this.state.selectedLocality + "," + this.state.selectedSublocality;
+    }
+
+    var districtActive;
+    for (var constituency in constituencies){
+      for (var district in constituencies[constituency]){
+        if (constituencies[constituency][district] === districtString){
+          districtActive = constituency;
+        }
+      }
+    }
+    if (typeof districtActive !== 'undefined'){
+      var districtActiveArray = districtActive.split(',');
+      var localLegislator;
+      var proportionalLegislators = [];
+      var aboriginalLegislators = [];
+      for (var legislator in legislators){
+        if (legislators[legislator].constituency[0] === districtActiveArray[0] && legislators[legislator].constituency[1] === parseInt(districtActiveArray[1]) && typeof legislators[legislator].contacts !== 'undefined'){
+          localLegislator = legislators[legislator];
+        }
+        if (legislators[legislator].constituency[0] === 'proportional' && typeof legislators[legislator].contacts !== 'undefined'){
+          proportionalLegislators.push(legislators[legislator]);
+        }
+        if (legislators[legislator].constituency[0] === 'aborigine' && typeof legislators[legislator].contacts !== 'undefined'){
+          aboriginalLegislators.push(legislators[legislator]);
+        }
+      }
+      this.setState({localLegislator:localLegislator, proportionalLegislators:proportionalLegislators, aboriginalLegislators:aboriginalLegislators});
+    }
+  }
+
 
 }
 
